@@ -110,3 +110,35 @@ def test_select_more_choices_than_max_raises_exception():
     question.add_choice('a', True)
     with pytest.raises(Exception):
         question.select_choices([999, 54])
+
+@pytest.fixture
+def create_question():
+    question = Question(title='Questão 1', max_selections=2)
+    question.add_choice('a', False)
+    question.add_choice('b', False)
+    question.add_choice('c', True)
+    question.add_choice('d', True)
+    
+    return question
+
+@pytest.fixture(params=[1, 2, 3])
+def question_with_varied_max_selections(request):
+    question = Question(title='Parametrized Question', max_selections=request.param)
+    question.add_choice('A', is_correct=True)
+    question.add_choice('B', is_correct=False)
+    return question
+
+def test_select_max_allowed_choices(create_question):
+    correct_ids = [choice.id for choice in create_question.choices if choice.is_correct]
+    result = create_question.select_choices(correct_ids)
+    assert result == correct_ids
+
+def test_max_selections_varies_correctly(question_with_varied_max_selections):
+    question = question_with_varied_max_selections
+    all_choice_ids = [choice.id for choice in question.choices]
+    
+    invalid_selection = all_choice_ids*2
+    
+    if len(invalid_selection) > question.max_selections:
+        with pytest.raises(Exception) as exc:
+            question.select_choices(invalid_selection)
